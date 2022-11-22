@@ -6,7 +6,7 @@
 <li>def clients - This function returns a list with only the clients. the gateway is removed from the list.</li>
 <li>arp_res -> The response from the ARP scan</li>
 <li>gateway_res -> The response from the gateway_info function</li>
-<ol>def allow_ip_forwarding - Running this function allows ip forwarding. The packets will flow through your machine, and you'll be able to capture them Otherwise user will lose connection</li>
+<li>def allow_ip_forwarding - Running this function allows ip forwarding. The packets will flow through your machine, and you'll be able to capture them Otherwise user will lose connection</li>
 <li>def arp_spoofer - This function needs to be ran twice to update the ARP tables. One time with the gateway IP and MAC, and one time with the target's IP and MAC.</li>
 <li>def packet_sniffer - This function will be a packet sniffer to capture all the packets sent to the computer whilst the computer is the MITM</li>
 <li>def process_sniffed_pkt - A callback function that works with the packet sniffer. It reads and stores the packets in pcap file</li>
