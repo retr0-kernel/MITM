@@ -74,3 +74,25 @@ def gateway_info(network_info):
                 gateways.append({"iface" : iface_name, "ip" : iface["ip"], "mac" : iface["mac"]})
     return gateways
 
+def clients(arp_res, gateway_res):
+    """This function returns a list with only the clients. the gateway is removed from the list.
+    arp_res -> The response from the ARP scan
+    gateway_res -> The response from the gateway_info function."""
+    # Clearing the menu so only you have access to clients whose arp tables you want to poison
+    client_list = []
+    for gateway in gateway_res:
+        for item in arp_res:
+            #All items which are not the gateway will append to the client list.
+            if gateway["ip"] != item['ip']:
+                client_list.append(item)
+    # return the list with the clients which will be used for the menu
+    return client_list
+
+
+def allow_ip_forwarding():
+    """Running this function allows ip forwarding. The packets will flow through your machine, and you'll be able to capture them. Otherwise user will lose connection."""
+
+    #normally this is run sysctl -w net.ipv4.ip_forward=1 to enable ip forwarding. We run subprocess.run()
+    subprocess.run(["sysctl", "-w", "net.ipv4.ip_forward=1"])
+    # Load  in sysctl settings from the /etc/sysctl.conf file. 
+    subprocess.run(["sysctl", "-p", "/etc/sysctl.conf"])
