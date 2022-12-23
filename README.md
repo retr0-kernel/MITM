@@ -1,6 +1,6 @@
 ## After owning any network this can be used to spy on it
 
-<h3>This script it only for educational purposes<h3>
+<h3>This script is only for educational purposes<h3>
 <ul>
 <li>def in_sudo_mode - Function to check if the script is being runwith sudo priviledges. If not it will stop</li>
 <li>def clients - This function returns a list with only the clients. the gateway is removed from the list.</li>
